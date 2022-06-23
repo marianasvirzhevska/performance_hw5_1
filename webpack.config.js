@@ -1,23 +1,38 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+const APP_PAGES = ['page1', 'page2'];
+const SHARED_MODULES = 'shared';
+
+const getJSEntry = (entryName) => ({
+    [entryName]: {
+        import: path.resolve(__dirname, `src/js/${entryName}.js`),
+        dependOn: SHARED_MODULES,
+    }
+});
+
+const getHTMLEntry = (entryName) => ({
+    entry: entryName,
+    template: `./src/${entryName}.html`,
+    filename: `${entryName}.html`,
+    chunks: [SHARED_MODULES, entryName],
+});
+
+const jsEntries = APP_PAGES.reduce((acc, curr) => {
+    return {...acc, ...getJSEntry(curr)};
+}, {});
+
+const htmlEntries = APP_PAGES.map((el) =>  new HtmlWebpackPlugin(getHTMLEntry(el)));
+
 module.exports = {
     mode: 'development',
     entry: {
-        page1: {
-            import: path.resolve(__dirname, 'src/js/page1.js'),
-            dependOn: 'shared',
-        },
-        page2: {
-            import: path.resolve(__dirname, 'src/js/page2.js'),
-            dependOn: 'shared',
-        },
-        shared: path.resolve(__dirname, 'src/js/index.js'),
+        ...jsEntries,
+        [SHARED_MODULES]: path.resolve(__dirname, 'src/js/index.js'),
     },
     output: {
         filename: '[name].bundle.js',
     },
-
     module: {
         rules: [
             {
@@ -49,17 +64,6 @@ module.exports = {
         },
     },
     plugins: [
-        new HtmlWebpackPlugin({
-            entry: 'page1',
-            template: './src/page1.html',
-            filename: 'page1.html',
-            chunks: ['shared', 'page1'],
-        }),
-        new HtmlWebpackPlugin({
-            entry: 'page2',
-            template: './src/page2.html',
-            filename: 'page2.html',
-            chunks: ['shared', 'page2'],
-        }),
+        ...htmlEntries,
     ],
 };
